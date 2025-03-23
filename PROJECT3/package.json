@@ -1,0 +1,16 @@
+{
+  "name": "freelancer-platform",
+  "version": "1.0.0",
+  "description": "Freelancers' Income and Tax Management Platform",
+  "scripts": {
+    "start": "concurrently \"cd backend ; npm run dev\" \"cd frontend ; npm start\"",
+    "install-deps": "cd backend ; npm install ; cd ../frontend ; npm install",
+    "dev": "npm run install-deps ; npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "dependencies": {
+    "freelancer-platform": "file:"
+  }
+}
