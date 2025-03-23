@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   Box,
@@ -19,32 +18,26 @@ import {
   TextField,
   IconButton,
   Alert,
-  CircularProgress,
-  Snackbar,
+  Tooltip,
 } from '@mui/material';
 import { Add as AddIcon, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material';
 import { getIncomes, addIncome, deleteIncome, updateIncome } from '../features/incomeSlice';
-import { getInvoices } from '../features/invoiceSlice';
+import { formatCurrency } from '../utils/invoiceUtils';
 
 const Income = () => {
   const dispatch = useDispatch();
   const { incomes, loading, error } = useSelector((state) => state.income);
   const [open, setOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [deletingId, setDeletingId] = useState(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedIncomeId, setSelectedIncomeId] = useState(null);
   const [formData, setFormData] = useState({
     source: '',
     amount: '',
-    date: '',
+    date: new Date().toISOString().split('T')[0],
     description: '',
   });
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   // Initial load of incomes
   useEffect(() => {
@@ -52,11 +45,8 @@ const Income = () => {
       try {
         await dispatch(getIncomes()).unwrap();
       } catch (error) {
-        setSnackbar({
-          open: true,
-          message: error.message || 'Failed to load incomes',
-          severity: 'error'
-        });
+        console.error('Error loading incomes:', error);
+        // You might want to show an error message to the user here
       }
     };
     loadIncomes();
@@ -78,7 +68,7 @@ const Income = () => {
       setFormData({
         source: '',
         amount: '',
-        date: '',
+        date: new Date().toISOString().split('T')[0],
         description: '',
       });
     }
@@ -87,20 +77,13 @@ const Income = () => {
 
   const handleClose = () => {
     setOpen(false);
-    setIsEditing(false);
-    setSelectedIncomeId(null);
+    setDeleteDialogOpen(false);
+    setDeletingId(null);
     setFormData({
       source: '',
       amount: '',
-      date: '',
+      date: new Date().toISOString().split('T')[0],
       description: '',
-    });
-  };
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
     });
   };
 
@@ -113,33 +96,17 @@ const Income = () => {
 
       if (isEditing && selectedIncomeId) {
         await dispatch(updateIncome({ id: selectedIncomeId, incomeData: formattedData })).unwrap();
-        setSnackbar({
-          open: true,
-          message: 'Income updated successfully',
-          severity: 'success'
-        });
+        // You might want to show a success message here
       } else {
         await dispatch(addIncome(formattedData)).unwrap();
-        setSnackbar({
-          open: true,
-          message: 'Income added successfully',
-          severity: 'success'
-        });
+        // You might want to show a success message here
       }
-      
+
       handleClose();
-      
-      // Refresh the lists after successful operation
-      await Promise.all([
-        dispatch(getIncomes()),
-        dispatch(getInvoices())
-      ]);
+      dispatch(getIncomes());
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || 'Failed to process income',
-        severity: 'error'
-      });
+      console.error('Error processing income:', error);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -151,200 +118,148 @@ const Income = () => {
   const confirmDelete = async () => {
     try {
       await dispatch(deleteIncome(deletingId)).unwrap();
-      setSnackbar({
-        open: true,
-        message: 'Income deleted successfully',
-        severity: 'success'
-      });
-      setDeleteDialogOpen(false);
-      setDeletingId(null);
+      // You might want to show a success message here
+      handleClose();
+      dispatch(getIncomes());
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.message || 'Failed to delete income',
-        severity: 'error'
-      });
+      console.error('Error deleting income:', error);
+      // You might want to show an error message to the user here
     }
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
-  };
-
   const calculateTotalIncome = () => {
-    return incomes.reduce((total, income) => total + parseFloat(income.amount), 0).toFixed(2);
+    return incomes.reduce((total, income) => total + parseFloat(income.amount), 0);
   };
-
-  const today = new Date().toISOString().split('T')[0];
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Income Management</Typography>
         <Button
           variant="contained"
+          color="primary"
           startIcon={<AddIcon />}
           onClick={() => handleOpen()}
-          disabled={loading}
         >
           Add Income
         </Button>
       </Box>
 
-      {snackbar.open && (
-        <Alert severity={snackbar.severity} sx={{ mb: 2 }}>
-          {snackbar.message}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error.message || 'An error occurred'}
         </Alert>
       )}
 
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <Typography variant="h6" gutterBottom>
-          Total Income: ${calculateTotalIncome()}
-        </Typography>
-      </Paper>
-
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Source</TableCell>
-              <TableCell>Amount</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Description</TableCell>
-              <TableCell align="center">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
+      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <CircularProgress size={24} />
-                </TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell align="right">Amount</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Description</TableCell>
+                <TableCell align="center">Actions</TableCell>
               </TableRow>
-            ) : incomes.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  No income entries found
-                </TableCell>
-              </TableRow>
-            ) : (
-              incomes.map((income) => (
-                <TableRow key={income._id}>
-                  <TableCell>{income.source}</TableCell>
-                  <TableCell>${income.amount.toFixed(2)}</TableCell>
-                  <TableCell>{new Date(income.date).toLocaleDateString()}</TableCell>
-                  <TableCell>{income.description}</TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleOpen(income)}
-                      disabled={loading}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      color="error"
-                      onClick={() => handleDelete(income._id)}
-                      disabled={loading}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    Loading...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : incomes.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} align="center">
+                    No income entries found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                incomes.map((income) => (
+                  <TableRow key={income._id}>
+                    <TableCell>{income.source}</TableCell>
+                    <TableCell align="right">{formatCurrency(income.amount)}</TableCell>
+                    <TableCell>{new Date(income.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{income.description}</TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        <Tooltip title="Edit Income">
+                          <IconButton
+                            color="primary"
+                            onClick={() => handleOpen(income)}
+                          >
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete Income">
+                          <IconButton
+                            color="error"
+                            onClick={() => handleDelete(income._id)}
+                            disabled={loading}
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
 
-      <Dialog 
-        open={open} 
-        onClose={handleClose}
-      >
-        <DialogTitle>
-          {isEditing ? 'Edit Income' : 'Add New Income'}
-        </DialogTitle>
+      <Dialog open={open} onClose={handleClose}>
+        <DialogTitle>{isEditing ? 'Edit Income' : 'Add New Income'}</DialogTitle>
         <DialogContent>
-          <Box component="form" sx={{ mt: 2 }}>
+          <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
-              margin="normal"
-              required
               fullWidth
               label="Source"
-              name="source"
               value={formData.source}
-              onChange={handleChange}
-              disabled={loading}
-              inputProps={{ maxLength: 100 }}
-              helperText="Maximum 100 characters, letters, numbers, spaces, hyphens, and underscores only"
+              onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+              required
             />
             <TextField
-              margin="normal"
-              required
               fullWidth
               label="Amount"
-              name="amount"
               type="number"
               value={formData.amount}
-              onChange={handleChange}
-              disabled={loading}
-              inputProps={{ 
-                min: 0.01,
-                max: 999999999.99,
-                step: "0.01"
-              }}
-              helperText="Amount must be between 0.01 and 999,999,999.99"
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              required
+              InputProps={{ inputProps: { min: 0, step: 0.01 } }}
             />
             <TextField
-              margin="normal"
-              required
               fullWidth
               label="Date"
-              name="date"
               type="date"
               value={formData.date}
-              onChange={handleChange}
-              disabled={loading}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
               InputLabelProps={{ shrink: true }}
-              inputProps={{
-                max: today
-              }}
             />
             <TextField
-              margin="normal"
               fullWidth
               label="Description"
-              name="description"
               value={formData.description}
-              onChange={handleChange}
-              disabled={loading}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               multiline
               rows={3}
-              inputProps={{ maxLength: 500 }}
-              helperText="Optional, maximum 500 characters"
             />
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose} disabled={loading}>Cancel</Button>
-          <Button 
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              isEditing ? 'Save Changes' : 'Add Income'
-            )}
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {isEditing ? 'Save Changes' : 'Add Income'}
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={handleClose}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           <Typography>
@@ -352,28 +267,12 @@ const Income = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} disabled={loading}>Cancel</Button>
-          <Button 
-            onClick={confirmDelete} 
-            color="error" 
-            variant="contained"
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Delete'}
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

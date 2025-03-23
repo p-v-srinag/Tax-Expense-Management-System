@@ -4,6 +4,7 @@ import { Typography, Grid, Paper, Box, CircularProgress } from '@mui/material';
 import { getProfile } from '../features/authSlice';
 import { getIncomes } from '../features/incomeSlice';
 import { getInvoices } from '../features/invoiceSlice';
+import { formatCurrency } from '../utils/invoiceUtils';
 
 export default function Dashboard() {
   const dispatch = useDispatch();
@@ -31,10 +32,10 @@ export default function Dashboard() {
     const netIncome = totalIncome - taxLiability - totalExpenses;
 
     return {
-      totalIncome: totalIncome.toFixed(2),
-      totalExpenses: totalExpenses.toFixed(2),
-      taxLiability: taxLiability.toFixed(2),
-      netIncome: netIncome.toFixed(2)
+      totalIncome,
+      totalExpenses,
+      taxLiability,
+      netIncome
     };
   }, [incomes, invoices]);
 
@@ -65,7 +66,7 @@ export default function Dashboard() {
               Total Income
             </Typography>
             <Typography variant="h4" sx={{ color: 'success.main' }}>
-              ${stats.totalIncome}
+              {formatCurrency(stats.totalIncome)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {incomes.length} income entries
@@ -85,7 +86,7 @@ export default function Dashboard() {
               Total Expenses
             </Typography>
             <Typography variant="h4" sx={{ color: 'error.main' }}>
-              ${stats.totalExpenses}
+              {formatCurrency(stats.totalExpenses)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               {invoices.length} invoice entries
@@ -105,7 +106,7 @@ export default function Dashboard() {
               Tax Liability
             </Typography>
             <Typography variant="h4" sx={{ color: 'warning.main' }}>
-              ${stats.taxLiability}
+              {formatCurrency(stats.taxLiability)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Estimated (30%)
@@ -125,7 +126,7 @@ export default function Dashboard() {
               Net Income
             </Typography>
             <Typography variant="h4" sx={{ color: 'info.main' }}>
-              ${stats.netIncome}
+              {formatCurrency(stats.netIncome)}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               After tax and expenses

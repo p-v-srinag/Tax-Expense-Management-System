@@ -43,7 +43,7 @@ const PrintableInvoice = React.forwardRef((props, ref) => {
             Expenses & Tax Management
           </Typography>
           <Typography variant="h5" gutterBottom>
-            Tax Code: {invoice.print || 0}
+            Tax Code: {invoice.taxRate || 0}
           </Typography>
           <Typography variant="h6" color="text.secondary">
             Invoice #{invoice.invoiceNumber}
@@ -92,7 +92,7 @@ const PrintableInvoice = React.forwardRef((props, ref) => {
                 <Typography>{new Date(invoice.date).toLocaleDateString()}</Typography>
                 <Typography>{new Date(invoice.dueDate).toLocaleDateString()}</Typography>
                 <Typography sx={{ textTransform: 'capitalize' }}>{invoice.status}</Typography>
-                <Typography sx={{ fontWeight: 'bold' }}>{invoice.print || 0}</Typography>
+                <Typography sx={{ fontWeight: 'bold' }}>{invoice.taxRate || 0}</Typography>
               </Grid>
             </Grid>
           </Box>
@@ -134,7 +134,7 @@ const PrintableInvoice = React.forwardRef((props, ref) => {
                 <Typography sx={{ fontWeight: 'bold' }}>Tax Code:</Typography>
               </Grid>
               <Grid item xs={6}>
-                <Typography align="right">{invoice.print || 0}</Typography>
+                <Typography align="right">{invoice.taxRate || 0}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography sx={{ fontWeight: 'bold' }}>Tax Amount:</Typography>
@@ -197,7 +197,7 @@ const Invoices = () => {
     dueDate: formatDateForInput(new Date()),
     items: [{ description: "", quantity: 1, price: 0 }],
     notes: "",
-    print: 0
+    taxRate: 0
   });
   const [formErrors, setFormErrors] = useState({});
 
@@ -318,7 +318,7 @@ const Invoices = () => {
       dueDate: formatDateForInput(new Date()),
       items: [{ description: "", quantity: 1, price: 0 }],
       notes: "",
-      print: 0
+      taxRate: 0
     });
   };
 
@@ -332,7 +332,7 @@ const Invoices = () => {
       dueDate: formatDateForInput(new Date()),
       items: [{ description: "", quantity: 1, price: 0 }],
       notes: "",
-      print: 0
+      taxRate: 0
     });
   };
 
@@ -382,11 +382,12 @@ const Invoices = () => {
         description: formData.notes,
         items: formData.items,
         subtotal,
-        tax: formData.print,
+        tax: tax,
         total,
         date: new Date(formData.date).toISOString(),
         invoiceNumber: formData.invoiceNumber,
-        type: 'income'
+        type: 'income',
+        taxRate: formData.taxRate
       };
 
       // Log the data being sent
@@ -446,7 +447,7 @@ const Invoices = () => {
   };
 
   const calculateTax = () => {
-    return formData.print || 0;
+    return formData.taxRate || 0;
   };
 
   const calculateTotal = () => {
@@ -565,163 +566,165 @@ const Invoices = () => {
 
       <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
         <DialogTitle>
-          {selectedInvoice ? "Edit Invoice" : "Create New Invoice"}
+          {selectedInvoice ? "Edit Expense" : "Add Expense"}
         </DialogTitle>
         <DialogContent>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Invoice Number"
-                  value={formData.invoiceNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, invoiceNumber: e.target.value })
-                  }
-                  error={!!formErrors.invoiceNumber}
-                  helperText={formErrors.invoiceNumber}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Client Name"
-                  value={formData.clientName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, clientName: e.target.value })
-                  }
-                  error={!!formErrors.clientName}
-                  helperText={formErrors.clientName}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Date"
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, date: e.target.value })
-                  }
-                  error={!!formErrors.date}
-                  helperText={formErrors.date}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Due Date"
-                  type="date"
-                  value={formData.dueDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, dueDate: e.target.value })
-                  }
-                  error={!!formErrors.dueDate}
-                  helperText={formErrors.dueDate}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Print"
-                  type="number"
-                  value={formData.print}
-                  onChange={(e) =>
-                    setFormData({ ...formData, print: parseFloat(e.target.value) || 0 })
-                  }
-                  error={!!formErrors.print}
-                  helperText={formErrors.print}
-                  InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Items
-                </Typography>
-                {formData.items.map((item, index) => (
-                  <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
-                    <Grid item xs={12} md={5}>
-                      <TextField
-                        fullWidth
-                        label="Description"
-                        value={item.description}
-                        onChange={(e) =>
-                          updateItem(index, "description", e.target.value)
-                        }
-                        error={!!formErrors.items}
-                        helperText={formErrors.items}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        label="Quantity"
-                        type="number"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateItem(index, "quantity", Number(e.target.value))
-                        }
-                        error={!!formErrors.items}
-                        InputProps={{ inputProps: { min: 1 } }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <TextField
-                        fullWidth
-                        label="Price"
-                        type="number"
-                        value={item.price}
-                        onChange={(e) =>
-                          updateItem(index, "price", Number(e.target.value))
-                        }
-                        error={!!formErrors.items}
-                        InputProps={{ inputProps: { min: 0, step: 0.01 } }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={1}>
-                      <IconButton
-                        color="error"
-                        onClick={() => removeItem(index)}
-                        disabled={formData.items.length === 1}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Grid>
-                  </Grid>
-                ))}
-                <Button
-                  startIcon={<AddIcon />}
-                  onClick={addItem}
-                  sx={{ mt: 1 }}
-                >
-                  Add Item
-                </Button>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Notes"
-                  multiline
-                  rows={3}
-                  value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
-                />
-              </Grid>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Invoice Number"
+                name="invoiceNumber"
+                value={formData.invoiceNumber}
+                onChange={(e) =>
+                  setFormData({ ...formData, invoiceNumber: e.target.value })
+                }
+                error={!!formErrors.invoiceNumber}
+                helperText={formErrors.invoiceNumber}
+              />
             </Grid>
-          </Box>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Client Name"
+                name="clientName"
+                value={formData.clientName}
+                onChange={(e) =>
+                  setFormData({ ...formData, clientName: e.target.value })
+                }
+                error={!!formErrors.clientName}
+                helperText={formErrors.clientName}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Date"
+                name="date"
+                type="date"
+                value={formData.date}
+                onChange={(e) =>
+                  setFormData({ ...formData, date: e.target.value })
+                }
+                InputLabelProps={{ shrink: true }}
+                error={!!formErrors.date}
+                helperText={formErrors.date}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Due Date"
+                name="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) =>
+                  setFormData({ ...formData, dueDate: e.target.value })
+                }
+                InputLabelProps={{ shrink: true }}
+                error={!!formErrors.dueDate}
+                helperText={formErrors.dueDate}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Typography variant="subtitle1" gutterBottom>
+                Items
+              </Typography>
+              {formData.items.map((item, index) => (
+                <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+                  <Grid item xs={12} md={5}>
+                    <TextField
+                      fullWidth
+                      label="Description"
+                      value={item.description}
+                      onChange={(e) =>
+                        updateItem(index, "description", e.target.value)
+                      }
+                      error={!!formErrors.items?.[index]?.description}
+                      helperText={formErrors.items?.[index]?.description}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2}>
+                    <TextField
+                      fullWidth
+                      label="Quantity"
+                      type="number"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        updateItem(index, "quantity", Number(e.target.value))
+                      }
+                      error={!!formErrors.items?.[index]?.quantity}
+                      helperText={formErrors.items?.[index]?.quantity}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <TextField
+                      fullWidth
+                      label="Price"
+                      type="number"
+                      value={item.price}
+                      onChange={(e) =>
+                        updateItem(index, "price", Number(e.target.value))
+                      }
+                      error={!!formErrors.items?.[index]?.price}
+                      helperText={formErrors.items?.[index]?.price}
+                    />
+                  </Grid>
+                  <Grid item xs={12} md={2}>
+                    <IconButton 
+                      onClick={() => removeItem(index)}
+                      color="error"
+                      sx={{ mt: 1 }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
+              ))}
+              <Button
+                startIcon={<AddIcon />}
+                onClick={addItem}
+                sx={{ mt: 1 }}
+              >
+                Add Item
+              </Button>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes"
+                name="notes"
+                value={formData.notes}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
+                multiline
+                rows={3}
+                error={!!formErrors.notes}
+                helperText={formErrors.notes}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Tax Rate"
+                name="taxRate"
+                type="number"
+                value={formData.taxRate}
+                onChange={(e) =>
+                  setFormData({ ...formData, taxRate: parseFloat(e.target.value) || 0 })
+                }
+                error={!!formErrors.taxRate}
+                helperText={formErrors.taxRate}
+                InputProps={{ inputProps: { min: 0, step: 0.01 } }}
+              />
+            </Grid>
+          </Grid>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={loading}
-          >
-            {selectedInvoice ? "Update" : "Create"}
+          <Button onClick={handleSubmit} variant="contained" color="primary">
+            {selectedInvoice ? "Update Expense" : "Add Expense"}
           </Button>
         </DialogActions>
       </Dialog>
