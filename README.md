@@ -1,4 +1,4 @@
-# Freelancers' Income and Tax Management Platform
+# Freelancers Income and Tax Management Platform
 
 A comprehensive platform for freelancers to manage their income, generate invoices, and calculate tax liabilities automatically.
 
